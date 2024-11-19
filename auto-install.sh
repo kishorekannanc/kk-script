@@ -4,7 +4,7 @@ sudo apt-get upgrade -y
 
 #install docker
 sudo apt-get update -y
-sudo apt-get install -y docke.io
+sudo apt-get install -y docker.io
 sudo usermod -aG docker $USER
 sudo systemctl enable docker
 sudo systemctl start docker
