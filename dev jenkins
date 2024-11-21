@@ -1,0 +1,66 @@
+pipeline {
+    agent any
+    environment {
+        // Docker credentials stored in Jenkins
+        DOCKER_HUB_CREDENTIALS = credentials('docker-hub-credentials-id')
+        PUBLIC_REPO = 'your-dockerhub-username/dev'
+        # PRIVATE_REPO = 'your-dockerhub-username/prod'
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                // Checkout code from GitHub repository
+                checkout scm
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build Docker image
+                    sh 'docker build -t my-react-app .'
+                       sh 'build.sh'
+                }
+            }
+        }
+
+        stage('Push to Public Repo (dev)') {
+            when {
+                branch 'dev' // Only trigger for dev branch
+            }
+            steps {
+                script {
+                    // Tag and push the image to the public Docker Hub repo
+                    docker.withRegistry('https://index.docker.io/v1/', 'DOCKER_HUB_CREDENTIALS') {
+                        sh 'docker tag my-react-app $PUBLIC_REPO:latest'
+                        sh 'docker push $PUBLIC_REPO:latest'
+                    }
+                }
+            }
+        }
+
+        # stage('Push to Private Repo (prod)') {
+            when {
+                branch 'main' // Only trigger for main branch (after dev merge)
+            }
+            steps {
+                script {
+                    // Tag and push the image to the private Docker Hub repo
+                    docker.withRegistry('https://index.docker.io/v1/', 'DOCKER_HUB_CREDENTIALS') {
+                        sh 'docker tag my-react-app $PRIVATE_REPO:latest'
+                        sh 'docker push $PRIVATE_REPO:latest'
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Build and deployment successful!'
+        }
+        failure {
+            echo 'Build or deployment failed!'
+        }
+    }
+}
